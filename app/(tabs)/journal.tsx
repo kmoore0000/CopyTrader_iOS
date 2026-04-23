@@ -1,31 +1,34 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator, FlatList, Pressable, RefreshControl,
   StyleSheet, Text, View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { api, formatCurrency, formatPnl, pnlColor, type JournalTrade } from '../../lib/api';
+import { api, formatPnl, pnlColor, type JournalTrade, type JournalResponse } from '../../lib/api';
 import { Colors } from '../../constants/colors';
 
 type Range = '1D' | '1W' | '1M' | '3M' | 'ALL';
-
 const RANGES: Range[] = ['1D', '1W', '1M', '3M', 'ALL'];
 
 function rangeStart(r: Range): string | undefined {
+  if (r === 'ALL') return undefined;
   const now = new Date();
-  switch (r) {
-    case '1D':  now.setDate(now.getDate() - 1);   break;
-    case '1W':  now.setDate(now.getDate() - 7);   break;
-    case '1M':  now.setMonth(now.getMonth() - 1); break;
-    case '3M':  now.setMonth(now.getMonth() - 3); break;
-    case 'ALL': return undefined;
-  }
+  if (r === '1D') now.setDate(now.getDate() - 1);
+  if (r === '1W') now.setDate(now.getDate() - 7);
+  if (r === '1M') now.setMonth(now.getMonth() - 1);
+  if (r === '3M') now.setMonth(now.getMonth() - 3);
   return now.toISOString().slice(0, 10);
+}
+
+function fmtDuration(mins: number): string {
+  if (mins < 60)   return `${mins}m`;
+  if (mins < 1440) return `${Math.floor(mins / 60)}h ${mins % 60}m`;
+  return `${Math.floor(mins / 1440)}d`;
 }
 
 export default function JournalScreen() {
   const insets = useSafeAreaInsets();
-  const [trades,     setTrades]     = useState<JournalTrade[]>([]);
+  const [stats,      setStats]      = useState<JournalResponse | null>(null);
   const [loading,    setLoading]    = useState(true);
   const [error,      setError]      = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
@@ -35,7 +38,7 @@ export default function JournalScreen() {
     try {
       const from = rangeStart(range);
       const res  = await api.getJournal(from);
-      setTrades(res.trades);
+      setStats(res);
       setError(null);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Failed to load journal');
@@ -45,22 +48,10 @@ export default function JournalScreen() {
     }
   }, [range]);
 
-  useEffect(() => {
-    setLoading(true);
-    load();
-  }, [load]);
-
+  useEffect(() => { setLoading(true); load(); }, [load]);
   const onRefresh = useCallback(() => { setRefreshing(true); load(); }, [load]);
 
-  // Stats
-  const winners   = trades.filter(t => t.profit > 0);
-  const losers    = trades.filter(t => t.profit < 0);
-  const totalPnl  = trades.reduce((s, t) => s + t.profit, 0);
-  const totalSwap = trades.reduce((s, t) => s + (t.swap ?? 0), 0);
-  const netPnl    = totalPnl + totalSwap;
-  const winRate   = trades.length > 0
-    ? Math.round((winners.length / trades.length) * 100)
-    : 0;
+  const trades = stats?.trades ?? [];
 
   return (
     <View style={[styles.root, { paddingTop: insets.top }]}>
@@ -77,7 +68,7 @@ export default function JournalScreen() {
         ))}
       </View>
 
-      {loading && trades.length === 0 ? (
+      {loading && !stats ? (
         <View style={styles.center}>
           <ActivityIndicator color={Colors.brand} size="large" />
         </View>
@@ -88,28 +79,26 @@ export default function JournalScreen() {
       ) : (
         <FlatList
           data={trades}
-          keyExtractor={t => `${t.accountId}-${t.positionId}-${t.closeTime}`}
-          contentContainerStyle={{ paddingBottom: insets.bottom + 16 }}
+          keyExtractor={t => `${t.accountId}-${t.positionId}-${t.exitTime}`}
+          contentContainerStyle={{ paddingBottom: insets.bottom + 80 }}
           refreshControl={
             <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={Colors.brand} />
           }
           ListHeaderComponent={
-            trades.length > 0 ? (
+            stats && stats.totalTrades > 0 ? (
               <View style={styles.statsCard}>
+                {/* Row 1 */}
                 <View style={styles.statsRow}>
-                  <StatBox label="Trades"  value={trades.length.toString()} />
-                  <StatBox label="Win Rate" value={`${winRate}%`} color={winRate >= 50 ? Colors.brand : Colors.red} />
-                  <StatBox label="Net P&L"  value={formatPnl(netPnl)} color={pnlColor(netPnl)} />
+                  <StatBox label="Trades"   value={stats.totalTrades.toString()} />
+                  <StatBox label="Win Rate" value={`${Math.round(stats.winRate)}%`} color={stats.winRate >= 50 ? Colors.brand : Colors.red} />
+                  <StatBox label="Net P&L"  value={formatPnl(stats.totalNet)} color={pnlColor(stats.totalNet)} />
                 </View>
-                <View style={[styles.statsRow, { marginTop: 12, paddingTop: 12, borderTopWidth: 1, borderTopColor: Colors.separator }]}>
-                  <StatBox label="Winners" value={`${winners.length}`} color={Colors.brand} />
-                  <StatBox label="Losers"  value={`${losers.length}`}  color={Colors.red} />
-                  {totalSwap !== 0 && (
-                    <StatBox label="Swap" value={formatPnl(totalSwap)} color={pnlColor(totalSwap)} />
-                  )}
-                  {totalSwap === 0 && (
-                    <StatBox label="Gross P&L" value={formatPnl(totalPnl)} color={pnlColor(totalPnl)} />
-                  )}
+                <View style={styles.statsDivider} />
+                {/* Row 2 */}
+                <View style={styles.statsRow}>
+                  <StatBox label="Profit Factor" value={stats.profitFactor > 0 ? stats.profitFactor.toFixed(2) : '—'} />
+                  <StatBox label="Best"   value={formatPnl(stats.bestTrade)}  color={Colors.brand} />
+                  <StatBox label="Worst"  value={formatPnl(stats.worstTrade)} color={Colors.red} />
                 </View>
               </View>
             ) : null
@@ -117,7 +106,7 @@ export default function JournalScreen() {
           ListEmptyComponent={
             <View style={styles.center}>
               <Text style={styles.emptyIcon}>📓</Text>
-              <Text style={styles.emptyTitle}>No trades in this period</Text>
+              <Text style={styles.emptyTitle}>No trades found</Text>
               <Text style={styles.emptyText}>Try a wider date range.</Text>
             </View>
           }
@@ -130,8 +119,7 @@ export default function JournalScreen() {
 }
 
 function TradeCard({ trade: t }: { trade: JournalTrade }) {
-  const isBuy  = t.type?.toLowerCase() === 'buy';
-  const netPnl = t.profit + (t.swap ?? 0);
+  const isBuy = t.direction?.toLowerCase() === 'buy';
 
   function fmtDate(iso: string) {
     const d = new Date(iso);
@@ -142,39 +130,44 @@ function TradeCard({ trade: t }: { trade: JournalTrade }) {
 
   return (
     <View style={styles.card}>
-      {/* Top row */}
       <View style={styles.cardTop}>
         <View style={styles.symbolRow}>
           <Text style={styles.symbol}>{t.symbol}</Text>
-          {t.type && (
+          {t.direction && (
             <View style={[styles.badge, isBuy ? styles.buyBadge : styles.sellBadge]}>
               <Text style={[styles.badgeTxt, { color: isBuy ? Colors.brand : Colors.red }]}>
-                {t.type.toUpperCase()}
+                {t.direction.toUpperCase()}
               </Text>
             </View>
           )}
         </View>
-        <Text style={[styles.pnl, { color: pnlColor(netPnl) }]}>{formatPnl(netPnl)}</Text>
+        <Text style={[styles.pnl, { color: pnlColor(t.netProfit) }]}>{formatPnl(t.netProfit)}</Text>
       </View>
 
       <Text style={styles.accountLabel}>{t.accountId} · {t.platform}</Text>
 
-      {/* Price row */}
       <View style={styles.priceRow}>
-        <PriceStat label="Open"   value={t.openPrice?.toString()  ?? '—'} />
-        <PriceStat label="Close"  value={t.closePrice?.toString() ?? '—'} center />
+        <PriceStat label="Entry"  value={t.entryPrice?.toString() ?? '—'} />
+        <PriceStat label="Exit"   value={t.exitPrice?.toString()  ?? '—'} center />
         <PriceStat label="Volume" value={t.volume?.toString()     ?? '—'} right />
       </View>
 
-      {/* Date row */}
       <View style={styles.dateRow}>
-        <Text style={styles.dateText}>{fmtDate(t.closeTime)}</Text>
-        {(t.swap ?? 0) !== 0 && (
-          <Text style={[styles.swapText, { color: pnlColor(t.swap!) }]}>
-            swap {formatPnl(t.swap!)}
-          </Text>
-        )}
+        <Text style={styles.dateText}>{fmtDate(t.exitTime)}</Text>
+        <Text style={styles.durationText}>{fmtDuration(t.durationMinutes)}</Text>
       </View>
+
+      {(t.swap !== 0 || t.commission !== 0) && (
+        <View style={styles.feesRow}>
+          {t.swap !== 0 && (
+            <Text style={[styles.feeText, { color: pnlColor(t.swap) }]}>swap {formatPnl(t.swap)}</Text>
+          )}
+          {t.commission !== 0 && (
+            <Text style={[styles.feeText, { color: pnlColor(t.commission) }]}>comm {formatPnl(t.commission)}</Text>
+          )}
+          <Text style={styles.feeText}>gross {formatPnl(t.grossProfit)}</Text>
+        </View>
+      )}
 
       {t.comment && t.comment !== '' && (
         <Text style={styles.comment} numberOfLines={1}>{t.comment}</Text>
@@ -208,37 +201,40 @@ const styles = StyleSheet.create({
   center:     { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 8, padding: 32, marginTop: 60 },
   errorText:  { color: Colors.red, fontSize: 14, textAlign: 'center' },
   emptyIcon:  { fontSize: 40 },
-  emptyTitle: { color: Colors.text, fontSize: 18, fontWeight: '700', marginTop: 8 },
+  emptyTitle: { color: Colors.text, fontSize: 17, fontWeight: '600', marginTop: 8 },
   emptyText:  { color: Colors.textMuted, fontSize: 14, textAlign: 'center' },
 
   rangeBar:       { flexDirection: 'row', paddingHorizontal: 16, paddingVertical: 10, gap: 8 },
-  rangeBtn:       { flex: 1, alignItems: 'center', paddingVertical: 6, borderRadius: 8, backgroundColor: Colors.card, borderWidth: 1, borderColor: Colors.cardBorder },
+  rangeBtn:       { flex: 1, alignItems: 'center', paddingVertical: 6, borderRadius: 8, backgroundColor: Colors.card, borderWidth: 0.5, borderColor: Colors.cardBorder },
   rangeBtnActive: { backgroundColor: Colors.brandDim, borderColor: Colors.brand },
-  rangeTxt:       { fontSize: 12, fontWeight: '600', color: Colors.textMuted },
+  rangeTxt:       { fontSize: 12, fontWeight: '500', color: Colors.textMuted },
   rangeTxtActive: { color: Colors.brand },
 
-  statsCard:  { margin: 16, backgroundColor: Colors.card, borderRadius: 14, padding: 16, borderWidth: 1, borderColor: Colors.cardBorder },
-  statsRow:   { flexDirection: 'row' },
-  statLabel:  { fontSize: 11, color: Colors.textMuted, marginBottom: 4, fontWeight: '500', textTransform: 'uppercase', letterSpacing: 0.4 },
-  statValue:  { fontSize: 18, fontWeight: '700', color: Colors.text },
+  statsCard:    { margin: 16, backgroundColor: Colors.card, borderRadius: 18, padding: 16, borderWidth: 0.5, borderColor: Colors.cardBorder, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.25, shadowRadius: 10 },
+  statsRow:     { flexDirection: 'row' },
+  statsDivider: { height: 0.5, backgroundColor: Colors.separator, marginVertical: 12 },
+  statLabel:    { fontSize: 10, color: Colors.textMuted, marginBottom: 4, fontWeight: '500', textTransform: 'uppercase', letterSpacing: 0.5 },
+  statValue:    { fontSize: 17, fontWeight: '600', color: Colors.text, letterSpacing: -0.3 },
 
-  card:       { marginHorizontal: 16, backgroundColor: Colors.card, borderRadius: 14, padding: 16, borderWidth: 1, borderColor: Colors.cardBorder },
+  card:       { marginHorizontal: 16, backgroundColor: Colors.card, borderRadius: 16, padding: 16, borderWidth: 0.5, borderColor: Colors.cardBorder, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.2, shadowRadius: 6 },
   cardTop:    { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 4 },
   symbolRow:  { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  symbol:     { fontSize: 16, fontWeight: '800', color: Colors.text },
+  symbol:     { fontSize: 16, fontWeight: '700', color: Colors.text, letterSpacing: -0.3 },
   badge:      { paddingHorizontal: 7, paddingVertical: 2, borderRadius: 5 },
   buyBadge:   { backgroundColor: Colors.brandDim },
   sellBadge:  { backgroundColor: Colors.redDim },
-  badgeTxt:   { fontSize: 10, fontWeight: '800', letterSpacing: 0.5 },
-  pnl:        { fontSize: 17, fontWeight: '800' },
-  accountLabel: { fontSize: 11, color: Colors.textMuted, marginBottom: 12, fontWeight: '500' },
+  badgeTxt:   { fontSize: 10, fontWeight: '700', letterSpacing: 0.5 },
+  pnl:        { fontSize: 17, fontWeight: '600', letterSpacing: -0.3 },
+  accountLabel: { fontSize: 11, color: Colors.textMuted, marginBottom: 12, fontWeight: '400' },
 
-  priceRow:   { flexDirection: 'row', borderTopWidth: 1, borderTopColor: Colors.separator, paddingTop: 12 },
-  priceLabel: { fontSize: 11, color: Colors.textMuted, marginBottom: 3, fontWeight: '500' },
-  priceValue: { fontSize: 13, fontWeight: '600', color: Colors.text, fontVariant: ['tabular-nums'] },
+  priceRow:   { flexDirection: 'row', borderTopWidth: 0.5, borderTopColor: Colors.separator, paddingTop: 12 },
+  priceLabel: { fontSize: 10, color: Colors.textMuted, marginBottom: 3, fontWeight: '400', textTransform: 'uppercase', letterSpacing: 0.4 },
+  priceValue: { fontSize: 13, fontWeight: '500', color: Colors.text, fontVariant: ['tabular-nums'] },
 
-  dateRow:    { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 10 },
-  dateText:   { fontSize: 11, color: Colors.textMuted },
-  swapText:   { fontSize: 11, fontWeight: '600' },
-  comment:    { marginTop: 8, fontSize: 11, color: Colors.textMuted, fontStyle: 'italic' },
+  dateRow:      { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 10 },
+  dateText:     { fontSize: 11, color: Colors.textMuted },
+  durationText: { fontSize: 11, color: Colors.textMuted },
+  feesRow:      { flexDirection: 'row', gap: 10, marginTop: 6 },
+  feeText:      { fontSize: 11, color: Colors.textMuted },
+  comment:      { marginTop: 6, fontSize: 11, color: Colors.textMuted, fontStyle: 'italic' },
 });

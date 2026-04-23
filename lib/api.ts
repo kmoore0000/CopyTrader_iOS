@@ -41,20 +41,22 @@ export interface HistoryDeal {
 }
 
 export interface JournalTrade {
-  positionId: string;
-  accountId:  string;
-  symbol:     string;
-  type:       string;
-  lots:       number;
-  openPrice:  number;
-  closePrice: number;
-  openTime:   string;
-  closeTime:  string;
-  duration:   string;
-  grossProfit:number;
-  swap:       number;
-  netProfit:  number;
-  comment?:   string;
+  accountId:       string;
+  platform:        string;
+  positionId:      string;
+  symbol:          string;
+  direction:       string;   // "buy" | "sell"
+  volume:          number;
+  entryPrice:      number;
+  exitPrice:       number;
+  entryTime:       string;
+  exitTime:        string;
+  grossProfit:     number;
+  swap:            number;
+  commission:      number;
+  netProfit:       number;
+  durationMinutes: number;
+  comment?:        string;
 }
 
 export interface AccountConfig {
@@ -78,25 +80,22 @@ export interface PositionsResponse {
 }
 
 export interface JournalResponse {
-  accountId: string;
-  from:      string;
-  to:        string;
-  trades:    JournalTrade[];
-  summary: {
-    totalTrades:     number;
-    winningTrades:   number;
-    losingTrades:    number;
-    winRate:         number;
-    grossProfit:     number;
-    grossLoss:       number;
-    netProfit:       number;
-    avgWin:          number;
-    avgLoss:         number;
-    profitFactor:    number;
-    expectancy:      number;
-    largestWin:      number;
-    largestLoss:     number;
-  };
+  totalTrades:        number;
+  winCount:           number;
+  lossCount:          number;
+  breakEven:          number;
+  winRate:            number;
+  totalNet:           number;
+  grossProfit:        number;
+  grossLoss:          number;
+  profitFactor:       number;
+  avgWin:             number;
+  avgLoss:            number;
+  bestTrade:          number;
+  worstTrade:         number;
+  maxDrawdown:        number;
+  avgDurationMinutes: number;
+  trades:             JournalTrade[];
 }
 
 // ─── API client ──────────────────────────────────────────────────────────────
@@ -121,10 +120,14 @@ export const api = {
   getAccounts: () =>
     request<AccountConfig[]>('/api/accounts'),
 
-  getJournal: (accountId: string, from: string, to: string) =>
-    request<JournalResponse>(
-      `/api/journal/${encodeURIComponent(accountId)}?from=${from}&to=${to}`
-    ),
+  getJournal: (from?: string, to?: string, accountId?: string) => {
+    const params = new URLSearchParams();
+    if (from)      params.set('from', from);
+    if (to)        params.set('to', to);
+    if (accountId) params.set('accountId', accountId);
+    const qs = params.toString();
+    return request<JournalResponse>(`/api/journal${qs ? `?${qs}` : ''}`);
+  },
 
   health: () =>
     request<{ status: string; version: string }>('/api/health'),
