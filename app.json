@@ -1,0 +1,35 @@
+{
+  "expo": {
+    "name": "Growr",
+    "slug": "growr-ios",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "scheme": "growr",
+    "userInterfaceStyle": "dark",
+    "newArchEnabled": true,
+    "icon": "./assets/icon.png",
+    "splash": {
+      "backgroundColor": "#090909"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.growr.copytrader"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#090909"
+      },
+      "package": "com.growr.copytrader"
+    },
+    "web": {
+      "bundler": "metro",
+      "favicon": "./assets/icon.png"
+    },
+    "plugins": [
+      "expo-router"
+    ],
+    "experiments": {
+      "typedRoutes": true
+    }
+  }
+}

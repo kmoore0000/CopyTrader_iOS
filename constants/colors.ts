@@ -1,0 +1,16 @@
+export const Colors = {
+  bg:           '#090909',
+  card:         '#111111',
+  cardBorder:   '#1f1f1f',
+  brand:        '#22c55e',
+  brandDim:     'rgba(34,197,94,0.12)',
+  brandBorder:  'rgba(34,197,94,0.3)',
+  red:          '#ef4444',
+  redDim:       'rgba(239,68,68,0.12)',
+  amber:        '#f59e0b',
+  text:         '#ffffff',
+  textMuted:    '#6b7280',
+  textDim:      '#374151',
+  separator:    '#1f1f1f',
+  tabBar:       '#0d0d0d',
+};
