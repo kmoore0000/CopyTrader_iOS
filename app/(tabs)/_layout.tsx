@@ -1,11 +1,17 @@
+import { StyleSheet } from 'react-native';
 import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { BlurView } from 'expo-blur';
 import { Colors } from '../../constants/colors';
 
 type IoniconName = React.ComponentProps<typeof Ionicons>['name'];
 
 function TabIcon({ name, color, size }: { name: IoniconName; color: string; size: number }) {
-  return <Ionicons name={name} size={size} color={color} />;
+  return <Ionicons name={name} size={size - 1} color={color} />;
+}
+
+function FrostedBar() {
+  return <BlurView intensity={75} tint="dark" style={StyleSheet.absoluteFill} />;
 }
 
 export default function TabLayout() {
@@ -14,23 +20,35 @@ export default function TabLayout() {
       screenOptions={{
         tabBarActiveTintColor:   Colors.brand,
         tabBarInactiveTintColor: Colors.textMuted,
+        tabBarBackground:        () => <FrostedBar />,
         tabBarStyle: {
-          backgroundColor:  Colors.tabBar,
-          borderTopColor:   Colors.separator,
-          borderTopWidth:   1,
-          paddingBottom:    4,
+          backgroundColor: 'rgba(8,8,8,0.55)',
+          borderTopColor:  Colors.separator,
+          borderTopWidth:  0.5,
+          position:        'absolute',
         },
-        tabBarLabelStyle: { fontSize: 11, fontWeight: '500' },
-        headerStyle:      { backgroundColor: Colors.card },
-        headerTintColor:  Colors.text,
+        tabBarLabelStyle: {
+          fontSize:      10,
+          fontWeight:    '400',
+          letterSpacing: 0.1,
+        },
+        tabBarIconStyle: { marginTop: 1 },
+        headerStyle:     { backgroundColor: Colors.bg },
+        headerTintColor: Colors.text,
         headerShadowVisible: false,
-        headerTitleStyle: { fontWeight: '700', fontSize: 17 },
+        headerTitleStyle: {
+          fontWeight:    '500',
+          fontSize:      16,
+          letterSpacing: -0.2,
+        },
+        headerTitleAlign: 'center',
       }}
     >
       <Tabs.Screen
         name="index"
         options={{
-          title:    'Dashboard',
+          title:       'Dashboard',
+          headerShown: false,
           tabBarIcon: ({ color, size }) => (
             <TabIcon name="stats-chart" color={color} size={size} />
           ),
@@ -39,7 +57,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="positions"
         options={{
-          title:    'Positions',
+          title: 'Positions',
           tabBarIcon: ({ color, size }) => (
             <TabIcon name="pulse" color={color} size={size} />
           ),
@@ -48,18 +66,18 @@ export default function TabLayout() {
       <Tabs.Screen
         name="journal"
         options={{
-          title:    'Journal',
+          title: 'Journal',
           tabBarIcon: ({ color, size }) => (
-            <TabIcon name="journal" color={color} size={size} />
+            <TabIcon name="document-text-outline" color={color} size={size} />
           ),
         }}
       />
       <Tabs.Screen
         name="news"
         options={{
-          title:    'News',
+          title: 'News',
           tabBarIcon: ({ color, size }) => (
-            <TabIcon name="newspaper" color={color} size={size} />
+            <TabIcon name="newspaper-outline" color={color} size={size} />
           ),
         }}
       />
