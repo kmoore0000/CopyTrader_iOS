@@ -44,7 +44,7 @@ export default function NewsScreen() {
   }
 
   return (
-    <View style={[styles.root, { paddingTop: insets.top }]}>
+    <View style={styles.root}>
       {/* Symbol filter strip */}
       <View style={styles.filterWrap}>
         <ScrollView
