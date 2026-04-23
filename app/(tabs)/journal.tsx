@@ -111,7 +111,7 @@ export default function JournalScreen() {
 
   // ── Calendar view ──
   return (
-    <View style={[styles.root, { paddingTop: insets.top }]}>
+    <View style={styles.root}>
 
       {/* Month navigator */}
       <View style={styles.monthNav}>
@@ -388,7 +388,7 @@ function DayDetailView({
   const worstTrade = trades.length > 0 ? Math.min(...trades.map(t => t.netProfit)) : 0;
 
   return (
-    <View style={[styles.root, { paddingTop: insets.top }]}>
+    <View style={styles.root}>
 
       {/* Header */}
       <View style={styles.detailHeader}>
