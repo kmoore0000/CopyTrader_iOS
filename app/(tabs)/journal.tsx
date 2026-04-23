@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator, FlatList, Pressable, RefreshControl,
-  ScrollView, StyleSheet, Text, View,
+  StyleSheet, Text, View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { api, formatCurrency, formatPnl, pnlColor, type JournalTrade } from '../../lib/api';

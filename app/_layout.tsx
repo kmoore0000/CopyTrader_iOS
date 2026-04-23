@@ -1,10 +1,11 @@
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { Colors } from '../constants/colors';
 
 export default function RootLayout() {
   return (
-    <>
+    <SafeAreaProvider>
       <StatusBar style="light" />
       <Stack
         screenOptions={{
@@ -18,13 +19,13 @@ export default function RootLayout() {
         <Stack.Screen
           name="settings"
           options={{
-            title:          'Settings',
-            presentation:   'modal',
-            headerStyle:    { backgroundColor: Colors.card },
+            title:           'Settings',
+            presentation:    'modal',
+            headerStyle:     { backgroundColor: Colors.card },
             headerTintColor: Colors.text,
           }}
         />
       </Stack>
-    </>
+    </SafeAreaProvider>
   );
 }
