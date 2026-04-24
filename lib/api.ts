@@ -157,6 +157,11 @@ export const api = {
       method: 'POST',
       body: JSON.stringify(req),
     }),
+
+  closeAll: () =>
+    request<{ action: string; success: number; failed: number }>('/api/close_all', {
+      method: 'POST',
+    }),
 };
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
