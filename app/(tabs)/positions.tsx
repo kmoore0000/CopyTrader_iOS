@@ -53,9 +53,27 @@ export default function PositionsScreen() {
           onPress: async () => {
             setFlattening(true);
             try {
-              await api.closeAll();
-              // Reload immediately after close
+              const res = await api.closeAll();
+
+              // Wait 1.5s for brokers to confirm before reloading
+              await new Promise(r => setTimeout(r, 1500));
               await load();
+
+              // Check if any positions are still open after the first close
+              // (some accounts may have lagged — retry once more)
+              if (res.failed > 0) {
+                await new Promise(r => setTimeout(r, 1500));
+                await api.closeAll();
+                await new Promise(r => setTimeout(r, 1500));
+                await load();
+              }
+
+              if (res.failed > 0) {
+                Alert.alert(
+                  'Partial Close',
+                  `${res.success} position${res.success !== 1 ? 's' : ''} closed · ${res.failed} failed. Try flattening again.`,
+                );
+              }
             } catch (e) {
               Alert.alert('Error', e instanceof Error ? e.message : 'Failed to close all');
             } finally {

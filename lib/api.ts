@@ -95,7 +95,7 @@ export interface StatusResponse {
 }
 
 export interface PositionsResponse {
-  total:     number;
+  count:     number;
   positions: OpenPosition[];
 }
 
