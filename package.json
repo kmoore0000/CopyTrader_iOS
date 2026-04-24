@@ -28,7 +28,7 @@
     "react-native-screens": "~4.16.0",
     "@expo/vector-icons": "^15.0.3",
     "fast-xml-parser": "^4.3.6",
-    "react-native-webview": "~14.1.0"
+    "react-native-webview": "~13.16.0"
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",
