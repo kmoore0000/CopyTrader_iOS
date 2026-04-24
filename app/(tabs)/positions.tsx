@@ -3,6 +3,7 @@ import {
   ActivityIndicator, FlatList, RefreshControl,
   StyleSheet, Text, View,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { api, formatCurrency, formatPnl, pnlColor, type OpenPosition } from '../../lib/api';
 import { Colors } from '../../constants/colors';
@@ -43,7 +44,7 @@ export default function PositionsScreen() {
   const totalSwap = positions.reduce((s, p) => s + p.swap, 0);
 
   return (
-    <View style={[styles.root, { paddingTop: insets.top }]}>
+    <View style={styles.root}>
       {loading && positions.length === 0 ? (
         <View style={styles.center}>
           <ActivityIndicator color={Colors.brand} size="large" />
@@ -79,7 +80,7 @@ export default function PositionsScreen() {
           }
           ListEmptyComponent={
             <View style={styles.center}>
-              <Text style={styles.emptyIcon}>📭</Text>
+              <Ionicons name="pulse-outline" size={48} color={Colors.textMuted} />
               <Text style={styles.emptyTitle}>No open positions</Text>
               <Text style={styles.emptyText}>All markets are flat right now.</Text>
             </View>
@@ -155,7 +156,6 @@ const styles = StyleSheet.create({
   root:        { flex: 1, backgroundColor: Colors.bg },
   center:      { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 8, padding: 32, marginTop: 60 },
   errorText:   { color: Colors.red, fontSize: 14, textAlign: 'center' },
-  emptyIcon:   { fontSize: 40 },
   emptyTitle:  { color: Colors.text, fontSize: 18, fontWeight: '700', marginTop: 8 },
   emptyText:   { color: Colors.textMuted, fontSize: 14, textAlign: 'center' },
   summaryBar:  { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 12 },
