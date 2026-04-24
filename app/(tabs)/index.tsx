@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
-  ActivityIndicator, FlatList, Pressable, RefreshControl,
+  ActivityIndicator, FlatList, Image, Pressable, RefreshControl,
   StyleSheet, Text, View,
 } from 'react-native';
 import { router } from 'expo-router';
@@ -51,7 +51,11 @@ export default function DashboardScreen() {
     <View style={[styles.root, { paddingTop: insets.top }]}>
       {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Growr</Text>
+        <Image
+          source={require('../../assets/logo.png')}
+          style={styles.logo}
+          resizeMode="contain"
+        />
         <Pressable onPress={() => router.push('/settings')} hitSlop={12}>
           <Ionicons name="settings-outline" size={22} color={Colors.textMuted} />
         </Pressable>
@@ -185,7 +189,7 @@ function Stat({
 const styles = StyleSheet.create({
   root:          { flex: 1, backgroundColor: Colors.bg },
   header:        { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingVertical: 14 },
-  headerTitle:   { fontSize: 26, fontWeight: '700', color: Colors.brand, letterSpacing: -0.8 },
+  logo:          { height: 28, width: 110 },
   center:        { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12, padding: 32 },
   loadingText:   { color: Colors.textMuted, fontSize: 14, marginTop: 8 },
   errorTitle:    { color: Colors.text, fontSize: 17, fontWeight: '600' },
