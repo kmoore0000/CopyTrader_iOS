@@ -67,6 +67,26 @@ export interface AccountConfig {
   connected?: boolean;
 }
 
+export interface ManualTradeRequest {
+  action:    string;
+  symbol:    string;
+  lot?:      number;
+  sl?:       number;
+  tp?:       number;
+  slPips?:   number;
+  tpPips?:   number;
+  comment?:  string;
+  accounts?: string[];
+}
+
+export interface TradeResponse {
+  action:          string;
+  symbol:          string;
+  executionTimeMs: number;
+  accountsSuccess: number;
+  accountsFailed:  number;
+}
+
 export interface StatusResponse {
   total:     number;
   connected: number;
@@ -131,6 +151,12 @@ export const api = {
 
   health: () =>
     request<{ status: string; version: string }>('/api/health'),
+
+  trade: (req: ManualTradeRequest) =>
+    request<TradeResponse>('/api/trade', {
+      method: 'POST',
+      body: JSON.stringify(req),
+    }),
 };
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────

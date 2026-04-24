@@ -73,6 +73,16 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
+        name="charts"
+        options={{
+          title:       'Charts',
+          headerShown: false,
+          tabBarIcon: ({ color, size }) => (
+            <TabIcon name="bar-chart-outline" color={color} size={size} />
+          ),
+        }}
+      />
+      <Tabs.Screen
         name="news"
         options={{
           title: 'News',
