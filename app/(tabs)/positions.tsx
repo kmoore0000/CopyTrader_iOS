@@ -16,7 +16,8 @@ export default function PositionsScreen() {
   const [loading,    setLoading]    = useState(true);
   const [error,      setError]      = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
-  const [flattening, setFlattening] = useState(false);
+  const [flattening,    setFlattening]    = useState(false);
+  const [flattenStatus, setFlattenStatus] = useState('');
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const load = useCallback(async (silent = false) => {
@@ -52,32 +53,39 @@ export default function PositionsScreen() {
           style: 'destructive',
           onPress: async () => {
             setFlattening(true);
+            setFlattenStatus('Closing…');
+            const MAX_ATTEMPTS = 10;
+            const RETRY_DELAY  = 2000;
+
             try {
-              const res = await api.closeAll();
+              for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+                setFlattenStatus(attempt === 1 ? 'Closing…' : `Retrying… (${attempt}/${MAX_ATTEMPTS})`);
 
-              // Wait 1.5s for brokers to confirm before reloading
-              await new Promise(r => setTimeout(r, 1500));
-              await load();
-
-              // Check if any positions are still open after the first close
-              // (some accounts may have lagged — retry once more)
-              if (res.failed > 0) {
-                await new Promise(r => setTimeout(r, 1500));
                 await api.closeAll();
-                await new Promise(r => setTimeout(r, 1500));
-                await load();
-              }
+                await new Promise(r => setTimeout(r, RETRY_DELAY));
 
-              if (res.failed > 0) {
-                Alert.alert(
-                  'Partial Close',
-                  `${res.success} position${res.success !== 1 ? 's' : ''} closed · ${res.failed} failed. Try flattening again.`,
-                );
+                const res = await api.getPositions();
+                setPositions(res.positions);
+
+                if (res.positions.length === 0) {
+                  setFlattenStatus('');
+                  break;
+                }
+
+                if (attempt === MAX_ATTEMPTS) {
+                  setFlattenStatus('');
+                  Alert.alert(
+                    'Could Not Close All',
+                    `${res.positions.length} position${res.positions.length !== 1 ? 's' : ''} could not be closed. Check your broker connections and try again.`,
+                  );
+                }
               }
             } catch (e) {
+              setFlattenStatus('');
               Alert.alert('Error', e instanceof Error ? e.message : 'Failed to close all');
             } finally {
               setFlattening(false);
+              setFlattenStatus('');
             }
           },
         },
@@ -144,12 +152,15 @@ export default function PositionsScreen() {
 
                 {/* Flatten All button */}
                 <Pressable
-                  style={[styles.flattenBtn, flattening && { opacity: 0.6 }]}
+                  style={[styles.flattenBtn, flattening && { opacity: 0.85 }]}
                   onPress={flattenAll}
                   disabled={flattening}
                 >
                   {flattening ? (
-                    <ActivityIndicator color="#fff" size="small" />
+                    <>
+                      <ActivityIndicator color="#fff" size="small" />
+                      <Text style={styles.flattenTxt}>{flattenStatus || 'Closing…'}</Text>
+                    </>
                   ) : (
                     <>
                       <Ionicons name="close-circle-outline" size={16} color="#fff" />
