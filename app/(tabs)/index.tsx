@@ -188,7 +188,7 @@ function Stat({
 
 const styles = StyleSheet.create({
   root:          { flex: 1, backgroundColor: Colors.bg },
-  header:        { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingVertical: 14 },
+  header:        { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingLeft: 8, paddingRight: 20, paddingVertical: 14 },
   logo:          { height: 38, width: 150 },
   center:        { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12, padding: 32 },
   loadingText:   { color: Colors.textMuted, fontSize: 14, marginTop: 8 },
